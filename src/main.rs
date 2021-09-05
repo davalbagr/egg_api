@@ -171,30 +171,30 @@ fn new_pokemon(file_data: &[Pokemon], game: &str, egg_move_chance: usize, hidden
         Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance),
         Gender: gen_rand_gender(&pokemon.pokemon_id),
         isShiny: shiny_chance > rng.gen_range(0, 100),
-        Nature: rng.gen_range(0, 25),
+        Nature: rng.gen_range(1, 25),
         Hp: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         Atk: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         Def: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         SpA: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         SpD: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         Spe: match max_ivs {
             true => 31,
-            false => rng.gen_range(0, 31)
+            false => rng.gen_range(1, 32)
         },
         moveOne: match rand_moves.get(0) {
             None => 0,
