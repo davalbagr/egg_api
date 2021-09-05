@@ -222,15 +222,19 @@ fn gen_pokemons(file_data: &[Pokemon], numb_to_gen: usize, game: String, egg_mov
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file_data: Vec<Pokemon> = serde_json::from_str(&FILE_DATA_GLOBAL).unwrap();
     let file_data2: Vec<Pokemon> = file_data.clone();
     let maxivs_route = warp::path!("maxivs" / usize / String / usize / usize / usize)
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, true));
     let normal_route = warp::path!(usize / String / usize / usize / usize)
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data2, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
-
-    let socket = SocketAddr::new(IpAddr::from([127, 0, 0, 1]), env::var_os("PORT").unwrap().to_str().unwrap().parse().unwrap());
+    let port = std::env::var("PORT")
+        .ok()
+        .map(|val| val.parse::<u16>())
+        .unwrap_or(Ok(8080))?;
+    let socket = SocketAddr::new(IpAddr::from([127, 0, 0, 1]), port);
     let routes = warp::get().and(maxivs_route.or(normal_route));
     warp::serve(routes).run(socket).await;
+    Ok(())
 }
