@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/david/IdeaProjects/egg_api/target/release/build/typenum-efff98431bb07dc2/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/Users/david/IdeaProjects/egg_api/target/release/build/typenum-efff98431bb07dc2/out/op.rs

@@ -230,7 +230,7 @@ async fn main() {
     let normal_route = warp::path!(usize / String / usize / usize / usize)
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data2, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
 
-    let socket = SocketAddr::new(IpAddr::from([127, 0, 0, 1]), env::var("PORT").unwrap().parse().unwrap());
+    let socket = SocketAddr::new(IpAddr::from([127, 0, 0, 1]), env::var_os("PORT").unwrap().parse().unwrap());
     let routes = warp::get().and(maxivs_route.or(normal_route));
     warp::serve(routes).run(socket).await;
 }
