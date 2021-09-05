@@ -92,12 +92,12 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
     use rand::Rng;
     use rand::prelude::IteratorRandom;
     if !is_gen_lower_or_equal(generation, "generation-ii") {
-        let a = pokemon.hidden_abilities.clone().into_iter().filter(|x| { is_gen_lower_or_equal(x.gen.as_str(), generation) });
+        let a = pokemon.hidden_abilities.iter().filter(|x| { is_gen_lower_or_equal(x.gen.as_str(), generation) });
         let mut rng = rand::thread_rng();
         return if rng.gen_range(0, 101) < hidden_ability_chance && !is_gen_lower_or_equal(generation, "generation-iv") && a.clone().peekable().peek().is_some() {
             a.choose(&mut rng).unwrap().id
         } else {
-            pokemon.normal_abilities.iter().filter(|x| { is_gen_lower_or_equal(x.gen.as_str(), generation) }).choose(&mut rng).unwrap().id
+            pokemon.normal_abilities.iter().filter(|x| { is_gen_lower_or_equal(&x.gen, generation) }).choose(&mut rng).unwrap().id
         }
     }
     0
@@ -106,16 +106,16 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
 fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<usize> {
     use rand::Rng;
     use rand::prelude::IteratorRandom;
-    let normal_moves: Vec<usize> = pokemon.normal_moves.iter().filter_map(|x| match x.game.eq(game) {
+    let normal_moves = pokemon.normal_moves.iter().filter_map(|x| match x.game.eq(game) {
         true => Some(x.id),
         false => None
-    }).collect();
-    let egg_moves: Vec<usize> = pokemon.egg_moves.iter().filter_map(|x| match x.game.eq(game) {
+    });
+    let egg_moves = pokemon.egg_moves.iter().filter_map(|x| match x.game.eq(game) {
         true => Some(x.id),
         false => None
-    }).collect();
+    });
     let mut rng = rand::thread_rng();
-    if !egg_moves.is_empty() {
+    if egg_moves.clone().peekable().peek().is_some() {
         let mut b: usize = 0;
         for _ in 0..3 {
             if rng.gen_range(0, 101) < egg_move_chance {
@@ -123,18 +123,18 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<
             }
         }
         if b == 0 {
-            return normal_moves
+            return normal_moves.collect()
         }
-        let mut rtrnval: Vec<usize> = egg_moves.into_iter().choose_multiple(&mut rng, b);
-        rtrnval.append(&mut normal_moves.into_iter().choose_multiple(&mut rng, 4-b));
+        let mut rtrnval: Vec<usize> = egg_moves.choose_multiple(&mut rng, b);
+        rtrnval.append(&mut normal_moves.choose_multiple(&mut rng, 4-b));
         return rtrnval
     }
-    normal_moves.into_iter().choose_multiple(&mut rng, 4)
+    normal_moves.choose_multiple(&mut rng, 4)
 }
 
 fn gen_rand_species(file_data: &[Pokemon], generation: &str) -> Pokemon {
     use rand::prelude::IteratorRandom;
-    file_data.iter().filter(|x| {is_gen_lower_or_equal(x.pokemon_gen.as_str(), generation)}).choose(&mut rand::thread_rng()).unwrap().clone()
+    file_data.iter().filter(|x| {is_gen_lower_or_equal(&x.pokemon_gen, generation)}).choose(&mut rand::thread_rng()).unwrap().clone()
 }
 
 fn gen_rand_gender(species: &usize) -> u8 {
