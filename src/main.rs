@@ -1,5 +1,7 @@
 use warp::Filter;
 use serde::{Deserialize, Serialize};
+use std::env;
+use rand::seq::index::IndexVecIntoIter::USize;
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -27,21 +29,21 @@ struct Pokemon {
 
 #[derive(Serialize)]
 struct PokemonStats {
-    species: usize,
-    ability: usize,
-    gender: u8,
-    is_shiny: bool,
-    nature: u8,
-    hp: u8,
-    atk: u8,
-    def: u8,
-    spa: u8,
-    spd: u8,
-    spe: u8,
-    move_one: usize,
-    move_two: usize,
-    move_three: usize,
-    move_four: usize
+    Species: usize,
+    Ability: usize,
+    Gender: u8,
+    isShiny: bool,
+    Nature: u8,
+    Hp: u8,
+    Atk: u8,
+    Def: u8,
+    SpA: u8,
+    SpD: u8,
+    Spe: u8,
+    moveOne: usize,
+    moveTwo: usize,
+    moveThree: usize,
+    moveFour: usize
 
 }
 
@@ -153,7 +155,7 @@ fn gen_rand_gender(species: &usize) -> u8 {
         0
     }
     else {
-        rand::thread_rng().gen_range(0, 1)
+        rand::thread_rng().gen_range(0, 2)
     }
 }
 
@@ -164,48 +166,48 @@ fn new_pokemon(file_data: &[Pokemon], game: &str, egg_move_chance: usize, hidden
     let rand_moves = gen_rand_moves(&pokemon, game, egg_move_chance);
     let mut rng = rand::thread_rng();
     PokemonStats {
-        species: pokemon.pokemon_id,
-        ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance),
-        gender: gen_rand_gender(&pokemon.pokemon_id),
-        is_shiny: shiny_chance > rng.gen_range(0, 100),
-        nature: rng.gen_range(0, 25),
-        hp: match max_ivs {
+        Species: pokemon.pokemon_id,
+        Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance),
+        Gender: gen_rand_gender(&pokemon.pokemon_id),
+        isShiny: shiny_chance > rng.gen_range(0, 100),
+        Nature: rng.gen_range(0, 25),
+        Hp: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        atk: match max_ivs {
+        Atk: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        def: match max_ivs {
+        Def: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        spa: match max_ivs {
+        SpA: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        spd: match max_ivs {
+        SpD: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        spe: match max_ivs {
+        Spe: match max_ivs {
             true => 31,
             false => rng.gen_range(0, 31)
         },
-        move_one: match rand_moves.get(0) {
+        moveOne: match rand_moves.get(0) {
             None => 0,
             Some(x) => *x
         },
-        move_two: match rand_moves.get(1) {
+        moveTwo: match rand_moves.get(1) {
             None => 0,
             Some(x) => *x
         },
-        move_three: match rand_moves.get(2) {
+        moveThree: match rand_moves.get(2) {
             None => 0,
             Some(x) => *x
         },
-        move_four: match rand_moves.get(3) {
+        moveFour: match rand_moves.get(3) {
             None => 0,
             Some(x) => *x
         }
@@ -228,8 +230,5 @@ async fn main() {
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data2, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
 
     let routes = warp::get().and(maxivs_route.or(normal_route));
-
-    warp::serve(routes)
-        .run(([127, 0, 0, 1], 3030))
-        .await;
+    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
