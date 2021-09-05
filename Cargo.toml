@@ -1,5 +1,5 @@
 [package]
-name = "egg_api_rust"
+name = "egg_api"
 version = "0.1.0"
 authors = ["davalbagr <davalbagr2002@gmail.com>"]
 edition = "2018"

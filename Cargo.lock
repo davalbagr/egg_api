@@ -74,7 +74,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "egg_api_rust"
+name = "egg_api"
 version = "0.1.0"
 dependencies = [
  "rand 0.7.3",
