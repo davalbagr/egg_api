@@ -216,6 +216,9 @@ fn new_pokemon(file_data: &[Pokemon], game: &str, egg_move_chance: usize, hidden
 }
 
 fn gen_pokemons(file_data: &[Pokemon], numb_to_gen: usize, game: String, egg_move_chance: usize, hidden_ability_chance: usize, shiny_chance: usize, maxivs: bool) -> String {
+    if numb_to_gen > 1000000 {
+        return "requested too many eggs to be generated".to_string()
+    }
     serde_json::to_string::<Vec<PokemonStats>>((0..numb_to_gen).map( |_|
         new_pokemon(file_data, &game, egg_move_chance, hidden_ability_chance, shiny_chance, maxivs)
     ).collect::<Vec<PokemonStats>>().as_ref()).unwrap()
