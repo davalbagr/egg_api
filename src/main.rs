@@ -1,8 +1,7 @@
+#![allow(non_snake_case)]
 use warp::Filter;
 use serde::{Deserialize, Serialize};
-use std::env;
-use std::net::SocketAddr;
-use std::net::IpAddr;
+use std::net::{SocketAddr, IpAddr};
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -95,7 +94,7 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
     if !is_gen_lower_or_equal(generation, "generation-ii") {
         let a = pokemon.hidden_abilities.clone().into_iter().filter(|x| { is_gen_lower_or_equal(x.gen.as_str(), generation) });
         let mut rng = rand::thread_rng();
-        return if rng.gen_range(0, 100) < hidden_ability_chance && !is_gen_lower_or_equal(generation, "generation-iv") && a.clone().peekable().peek().is_some() {
+        return if rng.gen_range(0, 101) < hidden_ability_chance && !is_gen_lower_or_equal(generation, "generation-iv") && a.clone().peekable().peek().is_some() {
             a.choose(&mut rng).unwrap().id
         } else {
             pokemon.normal_abilities.iter().filter(|x| { is_gen_lower_or_equal(x.gen.as_str(), generation) }).choose(&mut rng).unwrap().id
@@ -119,7 +118,7 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<
     if !egg_moves.is_empty() {
         let mut b: usize = 0;
         for _ in 0..3 {
-            if rng.gen_range(0, 100) < egg_move_chance {
+            if rng.gen_range(0, 101) < egg_move_chance {
                 b += 1
             }
         }
@@ -163,14 +162,14 @@ fn gen_rand_gender(species: &usize) -> u8 {
 fn new_pokemon(file_data: &[Pokemon], game: &str, egg_move_chance: usize, hidden_ability_chance: usize, shiny_chance: usize, max_ivs: bool) -> PokemonStats {
     use rand::Rng;
     let generation: &str = game_to_gen(game);
-    let pokemon: Pokemon = gen_rand_species(file_data, generation);
+    let pokemon: Pokemon = gen_rand_species(&file_data, generation);
     let rand_moves = gen_rand_moves(&pokemon, game, egg_move_chance);
     let mut rng = rand::thread_rng();
     PokemonStats {
         Species: pokemon.pokemon_id,
         Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance),
         Gender: gen_rand_gender(&pokemon.pokemon_id),
-        isShiny: shiny_chance > rng.gen_range(0, 100),
+        isShiny: shiny_chance > rng.gen_range(0, 101),
         Nature: rng.gen_range(1, 26),
         Hp: match max_ivs {
             true => 31,
@@ -225,17 +224,16 @@ fn gen_pokemons(file_data: &[Pokemon], numb_to_gen: usize, game: String, egg_mov
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
     let file_data: Vec<Pokemon> = serde_json::from_str(&FILE_DATA_GLOBAL).unwrap();
-    let file_data2: Vec<Pokemon> = file_data.clone();
+    let file_data_clone: Vec<Pokemon> = file_data.clone();
     let maxivs_route = warp::path!("maxivs" / usize / String / usize / usize / usize)
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, true));
     let normal_route = warp::path!(usize / String / usize / usize / usize)
-        .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data2, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
+        .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data_clone, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string()).parse().unwrap();
     let socket = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), port);
     let routes = warp::get().and(maxivs_route.or(normal_route));
     warp::serve(routes).run(socket).await;
-    Ok(())
 }
