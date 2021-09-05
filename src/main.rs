@@ -230,10 +230,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let normal_route = warp::path!(usize / String / usize / usize / usize)
         .map(move |numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance| gen_pokemons(&file_data2, numb_to_gen, game, egg_move_chance, hidden_ability_chance, shiny_chance, false));
     let port = std::env::var("PORT")
-        .ok()
-        .map(|val| val.parse::<u16>())
-        .unwrap_or(Ok(8080))?;
-    let socket = SocketAddr::new(IpAddr::from([127, 0, 0, 1]), port);
+        .unwrap_or_else(|_| "8080".to_string()).parse().unwrap();
+    let socket = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), port);
     let routes = warp::get().and(maxivs_route.or(normal_route));
     warp::serve(routes).run(socket).await;
     Ok(())
