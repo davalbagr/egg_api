@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
+#![warn(clippy::too_many_arguments)]
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use warp::Filter;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
+use rand::thread_rng;
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -253,11 +255,11 @@ fn gen_pokemons(
     hidden_ability_chance: usize,
     shiny_chance: usize,
     maxivs: bool,
+    rng: &mut ThreadRng
 ) -> String {
     if numb_to_gen > 1000000 {
         return "requested too many eggs to be generated".to_string();
     }
-    let mut rng = rand::thread_rng();
     let mut rtrnval: String = String::from("[");
     for _ in 0..numb_to_gen {
         rtrnval.push_str(&serde_json::to_string::<PokemonStats>(&new_pokemon(
@@ -267,7 +269,7 @@ fn gen_pokemons(
             hidden_ability_chance,
             shiny_chance,
             maxivs,
-            &mut rng
+            rng
         )).unwrap());
         rtrnval.push_str(",")
     }
@@ -290,6 +292,7 @@ async fn main() {
                 hidden_ability_chance,
                 shiny_chance,
                 true,
+                &mut thread_rng()
             )
         },
     );
@@ -303,6 +306,7 @@ async fn main() {
                 hidden_ability_chance,
                 shiny_chance,
                 false,
+                &mut thread_rng()
             )
         },
     );
