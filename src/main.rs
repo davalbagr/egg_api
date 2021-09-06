@@ -6,6 +6,8 @@ use warp::Filter;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::thread_rng;
+use rand::prelude::IteratorRandom;
+use rand::Rng;
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -92,8 +94,6 @@ fn is_gen_lower_or_equal(gen1: &str, gen2: &str) -> bool {
 }
 
 fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: usize, rng: &mut ThreadRng) -> usize {
-    use rand::prelude::IteratorRandom;
-    use rand::Rng;
     if !is_gen_lower_or_equal(generation, "generation-ii") {
         let a = pokemon
             .hidden_abilities
@@ -118,8 +118,6 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
 }
 
 fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &mut ThreadRng) -> Vec<usize> {
-    use rand::prelude::IteratorRandom;
-    use rand::Rng;
     let normal_moves = pokemon
         .normal_moves
         .iter()
@@ -151,18 +149,7 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &m
     normal_moves.choose_multiple(rng, 4)
 }
 
-fn gen_rand_species(file_data: &[Pokemon], generation: &str, rng: &mut ThreadRng) -> Pokemon {
-    use rand::prelude::IteratorRandom;
-    file_data
-        .iter()
-        .filter(|x| is_gen_lower_or_equal(&x.pokemon_gen, generation))
-        .choose(rng)
-        .unwrap()
-        .clone()
-}
-
 fn gen_rand_gender(species: &usize, rng: &mut ThreadRng) -> u8 {
-    use rand::Rng;
     let genderless_pokemon: [usize; 23] = [
         883, 881, 343, 374, 436, 703, 615, 781, 882, 880, 870, 622, 599, 337, 81, 774, 855, 137,
         479, 338, 120, 201, 100,
@@ -193,14 +180,17 @@ fn new_pokemon(
     max_ivs: bool,
     rng: &mut ThreadRng,
 ) -> PokemonStats {
-    use rand::Rng;
     let generation: &str = game_to_gen(game);
-    let pokemon: Pokemon = gen_rand_species(&file_data, generation, rng);
-    let rand_moves = gen_rand_moves(&pokemon, game, egg_move_chance, rng);
+    let pokemon: &Pokemon = file_data
+        .iter()
+        .filter(|x| is_gen_lower_or_equal(&x.pokemon_gen, generation))
+        .choose(rng)
+        .unwrap();
+    let rand_moves = gen_rand_moves(pokemon, game, egg_move_chance, rng);
     let range = Uniform::new(1, 32);
     PokemonStats {
         Species: pokemon.pokemon_id,
-        Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance, rng),
+        Ability: gen_rand_ability(pokemon, generation, hidden_ability_chance, rng),
         Gender: gen_rand_gender(&pokemon.pokemon_id, rng),
         isShiny: shiny_chance > rng.gen_range(0, 101),
         Nature: rng.gen_range(1, 26),
