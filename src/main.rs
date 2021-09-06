@@ -132,7 +132,7 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<
             false => None,
         });
     let mut rng = rand::thread_rng();
-    if egg_moves.clone().peekable().peek() {
+    if egg_moves.clone().peekable().peek().is_some() {
         let mut b: usize = 0;
         for _ in 0..3 {
             if rng.gen_range(0, 101) < egg_move_chance {
