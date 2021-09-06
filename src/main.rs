@@ -110,18 +110,12 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &m
             false => None,
         });
     if egg_moves.clone().peekable().peek().is_some() {
-        let mut b: usize = 0;
-        for _ in 0..3 {
-            if rng.gen_range(0, 101) < egg_move_chance {
-                b += 1
-            }
+        let b: usize = (0..3).filter(|_| rng.gen_range(0, 101) < egg_move_chance).count();
+        if b != 0 {
+            let mut rtrnval = egg_moves.choose_multiple(rng, b);
+            rtrnval.append(&mut normal_moves.choose_multiple(rng, 4 - b));
+            return rtrnval;
         }
-        if b == 0 {
-            return normal_moves.collect();
-        }
-        let mut rtrnval: Vec<usize> = egg_moves.choose_multiple(rng, b);
-        rtrnval.append(&mut normal_moves.choose_multiple(rng, 4 - b));
-        return rtrnval;
     }
     normal_moves.choose_multiple(rng, 4)
 }
