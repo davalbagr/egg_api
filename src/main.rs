@@ -52,29 +52,6 @@ struct PokemonStats {
     moveFour: usize,
 }
 
-fn game_to_gen(game: &str) -> &'static str {
-    match game {
-        "red-blue" => "generation-i",
-        "yellow" => "generation-i",
-        "gold-silver" => "generation-ii",
-        "crystal" => "generation-ii",
-        "firered-leafgreen" => "generation-iii",
-        "ruby-sapphire" => "generation-iii",
-        "emerald" => "generation-iii",
-        "diamond-pearl" => "generation-iv",
-        "platinum" => "generation-iv",
-        "heartgold-soulsilver" => "generation-iv",
-        "black-white" => "generation-v",
-        "black-2-white-2" => "generation-v",
-        "x-y" => "generation-vi",
-        "omega-ruby-alpha-sapphire" => "generation-vi",
-        "sun-moon" => "generation-vii",
-        "ultra-sun-ultra-moon" => "generation-vii",
-        "sword-shield" => "generation-viii",
-        _ => "generation-iii",
-    }
-}
-
 fn convert_gen(gen: &str) -> u8 {
     match gen {
         "generation-i" => 1,
@@ -155,8 +132,7 @@ fn gen_rand_gender(species: &usize, rng: &mut ThreadRng) -> u8 {
         479, 338, 120, 201, 100,
     ];
 
-    let female_only_pokemon: [usize; 12] =
-        [29, 314, 440, 115, 238, 241, 548, 629, 669, 761, 856, 868];
+    let female_only_pokemon: [usize; 12] = [29, 314, 440, 115, 238, 241, 548, 629, 669, 761, 856, 868];
 
     let male_only_pokemon: [usize; 7] = [32, 236, 128, 538, 539, 627, 859];
 
@@ -180,7 +156,26 @@ fn new_pokemon(
     max_ivs: bool,
     rng: &mut ThreadRng,
 ) -> PokemonStats {
-    let generation: &str = game_to_gen(game);
+    let generation: &str = match game {
+        "red-blue" => "generation-i",
+        "yellow" => "generation-i",
+        "gold-silver" => "generation-ii",
+        "crystal" => "generation-ii",
+        "firered-leafgreen" => "generation-iii",
+        "ruby-sapphire" => "generation-iii",
+        "emerald" => "generation-iii",
+        "diamond-pearl" => "generation-iv",
+        "platinum" => "generation-iv",
+        "heartgold-soulsilver" => "generation-iv",
+        "black-white" => "generation-v",
+        "black-2-white-2" => "generation-v",
+        "x-y" => "generation-vi",
+        "omega-ruby-alpha-sapphire" => "generation-vi",
+        "sun-moon" => "generation-vii",
+        "ultra-sun-ultra-moon" => "generation-vii",
+        "sword-shield" => "generation-viii",
+        _ => "generation-iii",
+    };
     let pokemon: &Pokemon = file_data
         .iter()
         .filter(|x| is_gen_lower_or_equal(&x.pokemon_gen, generation))
@@ -245,7 +240,7 @@ fn gen_pokemons(
     hidden_ability_chance: usize,
     shiny_chance: usize,
     maxivs: bool,
-    rng: &mut ThreadRng
+    rng: &mut ThreadRng,
 ) -> String {
     if numb_to_gen > 1000000 {
         return "requested too many eggs to be generated".to_string();
@@ -259,7 +254,7 @@ fn gen_pokemons(
             hidden_ability_chance,
             shiny_chance,
             maxivs,
-            rng
+            rng,
         )).unwrap());
         rtrnval.push_str(",")
     }
