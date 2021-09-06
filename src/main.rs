@@ -2,6 +2,8 @@
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use warp::Filter;
+use rand::distributions::Uniform;
+use rand::rngs::ThreadRng;
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -87,26 +89,25 @@ fn is_gen_lower_or_equal(gen1: &str, gen2: &str) -> bool {
     convert_gen(gen1) <= convert_gen(gen2)
 }
 
-fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: usize) -> usize {
+fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: usize, rng: &mut ThreadRng) -> usize {
     use rand::prelude::IteratorRandom;
     use rand::Rng;
     if !is_gen_lower_or_equal(generation, "generation-ii") {
         let a = pokemon
             .hidden_abilities
             .iter()
-            .filter(|x| is_gen_lower_or_equal(x.gen.as_str(), generation));
-        let mut rng = rand::thread_rng();
+            .filter(|x| is_gen_lower_or_equal(&x.gen, generation));
         return if rng.gen_range(0, 101) < hidden_ability_chance
             && !is_gen_lower_or_equal(generation, "generation-iv")
             && a.clone().peekable().peek().is_some()
         {
-            a.choose(&mut rng).unwrap().id
+            a.choose(rng).unwrap().id
         } else {
             pokemon
                 .normal_abilities
                 .iter()
                 .filter(|x| is_gen_lower_or_equal(&x.gen, generation))
-                .choose(&mut rng)
+                .choose(rng)
                 .unwrap()
                 .id
         };
@@ -114,7 +115,7 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
     0
 }
 
-fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<usize> {
+fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &mut ThreadRng) -> Vec<usize> {
     use rand::prelude::IteratorRandom;
     use rand::Rng;
     let normal_moves = pokemon
@@ -131,7 +132,6 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<
             true => Some(x.id),
             false => None,
         });
-    let mut rng = rand::thread_rng();
     if egg_moves.clone().peekable().peek().is_some() {
         let mut b: usize = 0;
         for _ in 0..3 {
@@ -142,24 +142,24 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize) -> Vec<
         if b == 0 {
             return normal_moves.collect();
         }
-        let mut rtrnval: Vec<usize> = egg_moves.choose_multiple(&mut rng, b);
-        rtrnval.append(&mut normal_moves.choose_multiple(&mut rng, 4 - b));
+        let mut rtrnval: Vec<usize> = egg_moves.choose_multiple(rng, b);
+        rtrnval.append(&mut normal_moves.choose_multiple(rng, 4 - b));
         return rtrnval;
     }
-    normal_moves.choose_multiple(&mut rng, 4)
+    normal_moves.choose_multiple(rng, 4)
 }
 
-fn gen_rand_species(file_data: &[Pokemon], generation: &str) -> Pokemon {
+fn gen_rand_species(file_data: &[Pokemon], generation: &str, rng: &mut ThreadRng) -> Pokemon {
     use rand::prelude::IteratorRandom;
     file_data
         .iter()
         .filter(|x| is_gen_lower_or_equal(&x.pokemon_gen, generation))
-        .choose(&mut rand::thread_rng())
+        .choose(rng)
         .unwrap()
         .clone()
 }
 
-fn gen_rand_gender(species: &usize) -> u8 {
+fn gen_rand_gender(species: &usize, rng: &mut ThreadRng) -> u8 {
     use rand::Rng;
     let genderless_pokemon: [usize; 23] = [
         883, 881, 343, 374, 436, 703, 615, 781, 882, 880, 870, 622, 599, 337, 81, 774, 855, 137,
@@ -178,7 +178,7 @@ fn gen_rand_gender(species: &usize) -> u8 {
     } else if male_only_pokemon.contains(species) {
         0
     } else {
-        rand::thread_rng().gen_range(0, 2)
+        rng.gen_range(0, 2)
     }
 }
 
@@ -189,41 +189,42 @@ fn new_pokemon(
     hidden_ability_chance: usize,
     shiny_chance: usize,
     max_ivs: bool,
+    rng: &mut ThreadRng,
 ) -> PokemonStats {
     use rand::Rng;
     let generation: &str = game_to_gen(game);
-    let pokemon: Pokemon = gen_rand_species(&file_data, generation);
-    let rand_moves = gen_rand_moves(&pokemon, game, egg_move_chance);
-    let mut rng = rand::thread_rng();
+    let pokemon: Pokemon = gen_rand_species(&file_data, generation, rng);
+    let rand_moves = gen_rand_moves(&pokemon, game, egg_move_chance, rng);
+    let range = Uniform::new(1, 32);
     PokemonStats {
         Species: pokemon.pokemon_id,
-        Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance),
-        Gender: gen_rand_gender(&pokemon.pokemon_id),
+        Ability: gen_rand_ability(&pokemon, generation, hidden_ability_chance, rng),
+        Gender: gen_rand_gender(&pokemon.pokemon_id, rng),
         isShiny: shiny_chance > rng.gen_range(0, 101),
         Nature: rng.gen_range(1, 26),
         Hp: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         Atk: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         Def: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         SpA: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         SpD: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         Spe: match max_ivs {
             true => 31,
-            false => rng.gen_range(1, 32),
+            false => rng.sample(range),
         },
         moveOne: match rand_moves.get(0) {
             None => 0,
@@ -256,6 +257,7 @@ fn gen_pokemons(
     if numb_to_gen > 1000000 {
         return "requested too many eggs to be generated".to_string();
     }
+    let mut rng = rand::thread_rng();
     serde_json::to_string::<Vec<PokemonStats>>(
         (0..numb_to_gen)
             .map(|_| {
@@ -266,6 +268,7 @@ fn gen_pokemons(
                     hidden_ability_chance,
                     shiny_chance,
                     maxivs,
+                    &mut rng
                 )
             })
             .collect::<Vec<PokemonStats>>()
