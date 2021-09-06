@@ -258,23 +258,22 @@ fn gen_pokemons(
         return "requested too many eggs to be generated".to_string();
     }
     let mut rng = rand::thread_rng();
-    serde_json::to_string::<Vec<PokemonStats>>(
-        (0..numb_to_gen)
-            .map(|_| {
-                new_pokemon(
-                    file_data,
-                    &game,
-                    egg_move_chance,
-                    hidden_ability_chance,
-                    shiny_chance,
-                    maxivs,
-                    &mut rng
-                )
-            })
-            .collect::<Vec<PokemonStats>>()
-            .as_ref(),
-    )
-    .unwrap()
+    let mut rtrnval: String = String::from("[");
+    for _ in 0..numb_to_gen {
+        rtrnval.push_str(&serde_json::to_string::<PokemonStats>(&new_pokemon(
+            &file_data,
+            &game,
+            egg_move_chance,
+            hidden_ability_chance,
+            shiny_chance,
+            maxivs,
+            &mut rng
+        )).unwrap());
+        rtrnval.push_str(",")
+    }
+    rtrnval.pop();
+    rtrnval.push_str("]");
+    rtrnval
 }
 
 #[tokio::main]
