@@ -182,7 +182,7 @@ fn new_pokemon(
         Ability: gen_rand_ability(pokemon, generation, hidden_ability_chance, rng),
         Gender: gen_rand_gender(&pokemon.pokemon_id, rng),
         isShiny: shiny_chance > rng.gen_range(0, 101),
-        Nature: rng.gen_range(1, 26),
+        Nature: rng.gen_range(0, 26),
         Hp: match max_ivs {
             true => 31,
             false => rng.sample(range),
