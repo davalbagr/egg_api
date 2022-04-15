@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 #![warn(clippy::too_many_arguments)]
+use rand::distributions::Uniform;
+use rand::prelude::IteratorRandom;
+use rand::rngs::ThreadRng;
+use rand::thread_rng;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use warp::Filter;
-use rand::distributions::Uniform;
-use rand::rngs::ThreadRng;
-use rand::thread_rng;
-use rand::prelude::IteratorRandom;
-use rand::Rng;
 
 const FILE_DATA_GLOBAL: &str = include_str!("pokemons.json");
 
@@ -70,7 +70,12 @@ fn is_gen_lower_or_equal(gen1: &str, gen2: &str) -> bool {
     convert_gen(gen1) <= convert_gen(gen2)
 }
 
-fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: usize, rng: &mut ThreadRng) -> usize {
+fn gen_rand_ability(
+    pokemon: &Pokemon,
+    generation: &str,
+    hidden_ability_chance: usize,
+    rng: &mut ThreadRng,
+) -> usize {
     if !is_gen_lower_or_equal(generation, "generation-ii") {
         let a = pokemon
             .hidden_abilities
@@ -94,7 +99,12 @@ fn gen_rand_ability(pokemon: &Pokemon, generation: &str, hidden_ability_chance: 
     0
 }
 
-fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &mut ThreadRng) -> Vec<usize> {
+fn gen_rand_moves(
+    pokemon: &Pokemon,
+    game: &str,
+    egg_move_chance: usize,
+    rng: &mut ThreadRng,
+) -> Vec<usize> {
     let normal_moves = pokemon
         .normal_moves
         .iter()
@@ -109,15 +119,16 @@ fn gen_rand_moves(pokemon: &Pokemon, game: &str, egg_move_chance: usize, rng: &m
             true => Some(x.id),
             false => None,
         });
-    if egg_moves.clone().peekable().peek().is_some() {
-        let b: usize = (0..3).filter(|_| rng.gen_range(0, 101) < egg_move_chance).count();
-        if b != 0 {
-            let mut rtrnval = egg_moves.choose_multiple(rng, b);
-            rtrnval.append(&mut normal_moves.choose_multiple(rng, 4 - b));
-            return rtrnval;
+    let mut moves = vec![];
+    let mut amount_egg_moves = 0;
+    for _ in 0..egg_moves.clone().take(4).count() {
+        if rng.gen_range(0, 101) < egg_move_chance {
+            amount_egg_moves += 1;
         }
     }
-    normal_moves.choose_multiple(rng, 4)
+    moves.append(&mut egg_moves.choose_multiple(rng, amount_egg_moves));
+    moves.append(&mut normal_moves.choose_multiple(rng, 4 - amount_egg_moves));
+    moves
 }
 
 fn gen_rand_gender(species: &usize, rng: &mut ThreadRng) -> u8 {
@@ -126,7 +137,8 @@ fn gen_rand_gender(species: &usize, rng: &mut ThreadRng) -> u8 {
         479, 338, 120, 201, 100,
     ];
 
-    let female_only_pokemon: [usize; 12] = [29, 314, 440, 115, 238, 241, 548, 629, 669, 761, 856, 868];
+    let female_only_pokemon: [usize; 12] =
+        [29, 314, 440, 115, 238, 241, 548, 629, 669, 761, 856, 868];
 
     let male_only_pokemon: [usize; 7] = [32, 236, 128, 538, 539, 627, 859];
 
@@ -183,46 +195,16 @@ fn new_pokemon(
         Gender: gen_rand_gender(&pokemon.pokemon_id, rng),
         isShiny: shiny_chance > rng.gen_range(0, 101),
         Nature: rng.gen_range(1, 26),
-        Hp: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        Atk: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        Def: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        SpA: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        SpD: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        Spe: match max_ivs {
-            true => 31,
-            false => rng.sample(range),
-        },
-        moveOne: match rand_moves.get(0) {
-            None => 0,
-            Some(x) => *x,
-        },
-        moveTwo: match rand_moves.get(1) {
-            None => 0,
-            Some(x) => *x,
-        },
-        moveThree: match rand_moves.get(2) {
-            None => 0,
-            Some(x) => *x,
-        },
-        moveFour: match rand_moves.get(3) {
-            None => 0,
-            Some(x) => *x,
-        },
+        Hp: if max_ivs { 31 } else { rng.sample(range) },
+        Atk: if max_ivs { 31 } else { rng.sample(range) },
+        Def: if max_ivs { 31 } else { rng.sample(range) },
+        SpA: if max_ivs { 31 } else { rng.sample(range) },
+        SpD: if max_ivs { 31 } else { rng.sample(range) },
+        Spe: if max_ivs { 31 } else { rng.sample(range) },
+        moveOne: *rand_moves.get(0).unwrap_or(&0),
+        moveTwo: *rand_moves.get(1).unwrap_or(&0),
+        moveThree: *rand_moves.get(2).unwrap_or(&0),
+        moveFour: *rand_moves.get(3).unwrap_or(&0),
     }
 }
 
@@ -236,20 +218,23 @@ fn gen_pokemons(
     maxivs: bool,
     rng: &mut ThreadRng,
 ) -> String {
-    if numb_to_gen > 1000000 {
+    if numb_to_gen > 1000 {
         return "requested too many eggs to be generated".to_string();
     }
     let mut rtrnval: String = String::from("[");
     for _ in 0..numb_to_gen {
-        rtrnval.push_str(&serde_json::to_string::<PokemonStats>(&new_pokemon(
-            &file_data,
-            &game,
-            egg_move_chance,
-            hidden_ability_chance,
-            shiny_chance,
-            maxivs,
-            rng,
-        )).unwrap());
+        rtrnval.push_str(
+            &serde_json::to_string::<PokemonStats>(&new_pokemon(
+                file_data,
+                &game,
+                egg_move_chance,
+                hidden_ability_chance,
+                shiny_chance,
+                maxivs,
+                rng,
+            ))
+            .unwrap(),
+        );
         rtrnval.push_str(",")
     }
     rtrnval.pop();
@@ -271,7 +256,7 @@ async fn main() {
                 hidden_ability_chance,
                 shiny_chance,
                 true,
-                &mut thread_rng()
+                &mut thread_rng(),
             )
         },
     );
@@ -285,7 +270,7 @@ async fn main() {
                 hidden_ability_chance,
                 shiny_chance,
                 false,
-                &mut thread_rng()
+                &mut thread_rng(),
             )
         },
     );
